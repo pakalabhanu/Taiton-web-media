@@ -40,7 +40,7 @@
       overflow-x: hidden;
     }
 
-    /* Blended Welcome Intro Overlay (Plays strictly on page load/refresh, zero text/buttons) */
+    /* Blended Welcome Intro Overlay (Plays strictly on page load/refresh, zero text/buttons, full screen blend) */
     #welcomeOverlay {
       position: fixed;
       inset: 0;
@@ -48,9 +48,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(9, 11, 16, 0.72);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: transparent;
+      mix-blend-mode: screen;
       cursor: pointer;
       opacity: 1;
       transition: opacity 0.45s ease, visibility 0.45s ease;
@@ -69,8 +68,9 @@
       max-height: 720px;
       object-fit: contain;
       mix-blend-mode: screen;
-      -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, #000 62%, transparent 100%);
-      mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, #000 62%, transparent 100%);
+      filter: contrast(1.35) brightness(1.08);
+      -webkit-mask-image: radial-gradient(ellipse 78% 78% at 50% 50%, #000 55%, transparent 96%);
+      mask-image: radial-gradient(ellipse 78% 78% at 50% 50%, #000 55%, transparent 96%);
       pointer-events: none;
     }
 
@@ -992,7 +992,6 @@
       const playPromise = welcomeVideo.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          // If autoplay is blocked by browser policy, dismiss cleanly without showing text
           dismissWelcome();
         });
       }

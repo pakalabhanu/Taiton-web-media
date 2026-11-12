@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Camera & Prompt Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: '#0B0D12',
+            surface: '#12161F',
+            surfaceHover: '#181E2B',
+            accent: '#6366F1',
+            accentGlow: '#818CF8',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom scrollbar & subtle visual polish */
+    body {
+      background-color: #0B0D12;
+      color: #F3F4F6;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0D12;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232A3B;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #374151;
+    }
+    .glass-card {
+      background: linear-gradient(145deg, rgba(22, 27, 38, 0.85), rgba(14, 17, 24, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(12px);
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.45);
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.65), 0 0 20px -6px rgba(99, 102, 241, 0.25);
+      transform: translateY(-3px);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 border-b border-white/10 bg-[#0B0D12]/85 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-violet-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <i class="fa-solid fa-video text-white text-base"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">AI Camera & Prompt Studio</h1>
+              <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                VEO / KLING / SORA
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">Interactive Cinema Motion Library & Prompt Builder</p>
+          </div>
+        </div>
+
+        <!-- Mobile Add Button -->
+        <button id="mobileAddBtn" class="md:hidden inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/25 transition">
+          <i class="fa-solid fa-plus"></i> Add
+        </button>
+      </div>
+
+      <!-- Search & Action Controls -->
+      <div class="flex items-center gap-3 w-full md:w-auto">
+        <div class="relative flex-1 md:w-80">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search movements, lenses, prompts..."
+            class="w-full pl-9 pr-8 py-2.5 rounded-xl bg-[#131722] border border-white/10 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
+          />
+          <button id="clearSearchBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <button id="openAddModalBtn" class="hidden md:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white text-sm font-medium shadow-lg shadow-indigo-600/25 transition whitespace-nowrap">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Add New Movement</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Filter Bar -->
+    <div class="border-t border-white/5 bg-[#0D1017]/90">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+        <div id="categoryTabs" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+          <!-- Category buttons dynamically populated -->
+        </div>
+        <div class="hidden lg:flex items-center gap-2 text-xs text-slate-400 shrink-0">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Live Motion Previews Active</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Grid -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <!-- Status Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+      <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-400">
+        <span>Showing <strong id="visibleCount" class="text-white font-semibold">18</strong> camera movements</span>
+        <span id="activeFilterLabel" class="hidden px-2 py-0.5 rounded-md bg-white/5 text-slate-300 text-xs"></span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-400">
+        <span>Tip: Click any card to customize Subject, Lens & Aspect Ratio</span>
+      </div>
+    </div>
+
+    <!-- Responsive Grid -->
+    <div id="movementsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+      <!-- Cards injected via JS -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden flex-col items-center justify-center py-20 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 text-2xl mb-4">
+        <i class="fa-solid fa-film"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-white mb-1">No camera movements found</h3>
+      <p class="text-sm text-slate-400 max-w-md mb-5">Try clearing your search filter or add a custom camera movement to your personal studio library.</p>
+      <button id="resetFiltersBtn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition">
+        Reset All Filters
+      </button>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-5 px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
+    AI Camera & Prompt Studio &bull; Designed for AI Filmmakers, Directors & Prompt Engineers
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 pointer-events-none opacity-0 translate-y-3 transition-all duration-300">
+    <div class="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-[#161B26] border border-emerald-500/40 text-white text-sm font-medium shadow-2xl shadow-black/80">
+      <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <span id="toastMessage">Prompt copied to clipboard!</span>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- PROMPT CUSTOMIZER MODAL                                   -->
+  <!-- ========================================================= -->
+  <div id="customizerModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="relative w-full max-w-2xl rounded-2xl bg-[#12161F] border border-white/15 shadow-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#161B26]">
+        <div class="flex items-center gap-3">
+          <span id="modalCategoryBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+            Dolly & Tracking
+          </span>
+          <h2 id="modalMovementTitle" class="text-lg font-bold text-white">Dolly Push-In</h2>
+        </div>
+        <button id="closeCustomizerBtn" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-5 max-h-[82vh] overflow-y-auto">
+        <!-- Live Preview Canvas inside Modal -->
+        <div class="relative h-44 w-full rounded-xl bg-[#090B10] border border-white/10 overflow-hidden">
+          <canvas id="modalPreviewCanvas" class="w-full h-full block"></canvas>
+          <div class="absolute bottom-2.5 left-3 px-2.5 py-1 rounded-md bg-black/65 backdrop-blur-md border border-white/10 text-[11px] font-mono text-slate-300">
+            <span id="modalMotionVectorLabel">VECTOR: Z-AXIS FORWARD</span>
+          </div>
+          <div class="absolute top-2.5 right-3 px-2 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[10px] font-mono text-red-300 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span> REC
+          </div>
+        </div>
+
+        <!-- Subject Input -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Scene Subject & Environment
+          </label>
+          <input
+            type="text"
+            id="customSubjectInput"
+            placeholder="e.g., matte black luxury watch on wet obsidian stone, moody rim lighting"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0D12] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <!-- Controls Grid: Lens, Speed, Aspect Ratio -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Focal Length -->
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Lens Focal Length
+            </label>
+            <select id="customLensSelect" class="w-full px-3 py-2.5 rounded-xl bg-[#0B0D12] border border-white/10 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="14mm ultra-wide lens">14mm Ultra-Wide</option>
+              <option value="24mm wide-angle cinema lens">24mm Wide</option>
+              <option value="35mm anamorphic lens" selected>35mm Anamorphic</option>
+              <option value="50mm prime lens">50mm Standard Prime</option>
+              <option value="85mm portrait telephoto lens">85mm Telephoto</option>
+              <option value="135mm compressed telephoto lens">135mm Macro/Tele</option>
+            </select>
+          </div>
+
+          <!-- Motion Speed -->
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Camera Speed
+            </label>
+            <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#0B0D12] border border-white/10">
+              <button type="button" data-speed="Slow, deliberate" class="speed-btn py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">Slow</button>
+              <button type="button" data-speed="Smooth, controlled" class="speed-btn active py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white transition">Med</button>
+              <button type="button" data-speed="Fast, high-energy" class="speed-btn py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">Fast</button>
+            </div>
+          </div>
+
+          <!-- Aspect Ratio -->
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Aspect Ratio
+            </label>
+            <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#0B0D12] border border-white/10">
+              <button type="button" data-ar="16:9" class="ar-btn active py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white transition">16:9</button>
+              <button type="button" data-ar="9:16" class="ar-btn py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">9:16</button>
+              <button type="button" data-ar="2.39:1" class="ar-btn py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">2.39:1</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Prompt Box -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold uppercase tracking-wider text-indigo-300">
+              Generated Cinema AI Prompt
+            </label>
+            <span class="text-[11px] text-slate-400">Ready for Runway, Kling, Veo & Sora</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-[#080A0E] border border-indigo-500/30 font-mono text-xs sm:text-sm text-slate-200 leading-relaxed select-all" id="finalPromptOutput">
+            <!-- Dynamically updated -->
+          </div>
+        </div>
+
+        <!-- Modal Footer Buttons -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          <button id="deleteCustomMovementBtn" class="hidden w-full sm:w-auto px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-semibold transition">
+            <i class="fa-solid fa-trash-can mr-1.5"></i> Delete Custom Card
+          </button>
+          <div class="flex items-center gap-3 w-full sm:w-auto sm:ml-auto">
+            <button id="modalCancelBtn" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-medium transition">
+              Close
+            </button>
+            <button id="modalCopyBtn" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 transition">
+              <i class="fa-regular fa-copy"></i>
+              <span>Copy Final Prompt</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- ADD NEW CAMERA MOVEMENT MODAL                             -->
+  <!-- ========================================================= -->
+  <div id="addMovementModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="relative w-full max-w-lg rounded-2xl bg-[#12161F] border border-white/15 shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#161B26]">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-clapperboard text-indigo-400"></i>
+          Add Custom Camera Movement
+        </h2>
+        <button id="closeAddModalBtn" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="addMovementForm" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Movement Name *</label>
+          <input type="text" id="newTitle" required placeholder="e.g., Low-Angle Parallax Glide" class="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0D12] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Category *</label>
+            <select id="newCategory" class="w-full px-3 py-2.5 rounded-xl bg-[#0B0D12] border border-white/10 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="Dolly & Tracking">Dolly & Tracking</option>
+              <option value="Pan & Tilt">Pan & Tilt</option>
+              <option value="Zoom & Lens">Zoom & Lens</option>
+              <option value="Drone & Aerial">Drone & Aerial</option>
+              <option value="Dynamic / Action">Dynamic / Action</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Motion Simulation Type</label>
+            <select id="newAnimType" class="w-full px-3 py-2.5 rounded-xl bg-[#0B0D12] border border-white/10 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="dolly-in">Dolly Push-In (Forward)</option>
+              <option value="orbit">360° Orbital Arc</option>
+              <option value="truck">Lateral Truck Slide</option>
+              <option value="pan">Horizontal Pan Sweep</option>
+              <option value="pedestal">Vertical Pedestal Rise</option>
+              <option value="crash-zoom">Rapid Zoom Impulse</option>
+              <option value="drone-dive">Aerial Dive / Flyover</option>
+              <option value="dutch">Dutch Tilt Roll</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Technical Description & Best Use Case *</label>
+          <input type="text" id="newDescription" required placeholder="e.g., Smooth ground-level tracking past foreground elements. Best for luxury cars." class="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0D12] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Base AI Video Prompt *</label>
+          <textarea id="newPrompt" rows="3" required placeholder="e.g., Cinematic low-angle tracking shot gliding smoothly past foreground pillars toward the subject, 35mm anamorphic lens, shallow depth of field, 4k photorealistic" class="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0D12] border border-white/10 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" id="cancelAddModalBtn" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-medium transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/25 transition">
+            Save Movement
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    // =========================================================================
+    // 1. DEFAULT CURATED CAMERA MOVEMENTS LIBRARY (18 Core Movements)
+    // =========================================================================
+    const DEFAULT_MOVEMENTS = [
+      {
+        id: 'dolly-push-in',
+        title: 'Dolly Push-In',
+        category: 'Dolly & Tracking',
+        animType: 'dolly-in',
+        vectorLabel: 'Z-AXIS FORWARD DOLLY',
+        useCase: 'Product Reveal & Emotional Focus',
+        description: 'Physical camera moves forward on tracks toward the subject, expanding background perspective naturally.',
+        prompt: 'Smooth cinematic dolly push-in moving steadily toward [SUBJECT], natural perspective shift, shallow depth of field, 35mm anamorphic lens, moody studio lighting, 4k photorealistic'
+      },
+      {
+        id: 'dolly-pull-out',
+        title: 'Dolly Pull-Out (Reveal)',
+        category: 'Dolly & Tracking',
+        animType: 'dolly-out',
+        vectorLabel: 'Z-AXIS REVERSE REVEAL',
+        useCase: 'Environment & Scale Reveal',
+        description: 'Camera glides backward away from a close-up detail to gradually reveal the broader environment.',
+        prompt: 'Slow controlled dolly pull-out starting tight on [SUBJECT] and gradually revealing the surrounding vast environment, crisp focus, 24mm wide cinema lens, volumetric light'
+      },
+      {
+        id: 'truck-left-right',
+        title: 'Truck Left / Right',
+        category: 'Dolly & Tracking',
+        animType: 'truck',
+        vectorLabel: 'X-AXIS LATERAL TRACK',
+        useCase: 'Architectural Parallax & Lineups',
+        description: 'Camera moves horizontally parallel to the scene, creating strong foreground-to-background parallax depth.',
+        prompt: 'Smooth lateral truck tracking shot gliding horizontally past [SUBJECT], rich foreground and background parallax motion, 35mm prime lens, steady gimbal movement, high dynamic range'
+      },
+      {
+        id: '360-orbit',
+        title: '360° Orbital Arc',
+        category: 'Dolly & Tracking',
+        animType: 'orbit',
+        vectorLabel: '360° RADIAL ORBIT',
+        useCase: 'Hero Product & Character Showcase',
+        description: 'Camera circles smoothly around a locked central subject while the background sweeps dynamically.',
+        prompt: 'Seamless 360-degree orbital arc shot revolving smoothly around [SUBJECT] locked in center frame, dramatic rim lighting reflections shifting across surfaces, 50mm cinema lens'
+      },
+      {
+        id: 'steadicam-follow',
+        title: 'Steadicam Follow Shot',
+        category: 'Dolly & Tracking',
+        animType: 'steadicam',
+        vectorLabel: 'DYNAMIC TRACKING LEAD',
+        useCase: 'Walking Dialogue & Corridor Scenes',
+        description: 'Fluid, weightless tracking behind or ahead of a moving subject with subtle organic breathing.',
+        prompt: 'Fluid Steadicam tracking shot following closely behind [SUBJECT] moving through an atmospheric corridor, natural subtle motion, 35mm lens, cinematic color grading'
+      },
+      {
+        id: 'pedestal-up',
+        title: 'Pedestal Up',
+        category: 'Dolly & Tracking',
+        animType: 'pedestal',
+        vectorLabel: 'Y-AXIS VERTICAL ELEVATION',
+        useCase: 'Heroic Stature & Tall Architecture',
+        description: 'Entire camera body rises vertically on a hydraulic column without tilting, maintaining straight verticals.',
+        prompt: 'Steady vertical pedestal-up camera movement rising smoothly from floor level to reveal [SUBJECT], straight architectural vertical lines, 24mm tilt-shift aesthetic, 4k'
+      },
+      {
+        id: 'horizontal-pan',
+        title: 'Slow Cinematic Pan',
+        category: 'Pan & Tilt',
+        animType: 'pan',
+        vectorLabel: 'YAW AXIS HORIZONTAL SWEEP',
+        useCase: 'Landscape Vista & Establishing Shot',
+        description: 'Camera rotates horizontally left-to-right from a fixed tripod head to survey a wide panorama.',
+        prompt: 'Slow, tripod-mounted horizontal pan sweeping left to right across [SUBJECT], golden hour atmospheric haze, crisp horizon, 35mm anamorphic widescreen'
+      },
+      {
+        id: 'tilt-up-reveal',
+        title: 'Low-to-High Tilt Up',
+        category: 'Pan & Tilt',
+        animType: 'tilt',
+        vectorLabel: 'PITCH AXIS UPWARD TILT',
+        useCase: 'Skyscrapers, Monuments & Scale',
+        description: 'Camera pitches upward from a fixed pivot point, emphasizing height, grandeur, and vertical scale.',
+        prompt: 'Dramatic low-angle upward tilt starting at the base and tilting smoothly up toward the top of [SUBJECT], awe-inspiring scale, 24mm wide-angle lens, dramatic sky'
+      },
+      {
+        id: 'whip-pan',
+        title: 'High-Speed Whip Pan',
+        category: 'Pan & Tilt',
+        animType: 'whip-pan',
+        vectorLabel: 'RAPID YAW IMPULSE + BLUR',
+        useCase: 'Energetic Transitions & Action Cuts',
+        description: 'Ultra-fast horizontal camera rotation creating directional motion blur streaks between focal points.',
+        prompt: 'High-energy whip pan snapping rapidly across [SUBJECT] with directional cinema motion blur streaks, sharp lock-on landing, 35mm lens, dynamic commercial style'
+      },
+      {
+        id: 'dutch-angle',
+        title: 'Dutch Angle Roll',
+        category: 'Pan & Tilt',
+        animType: 'dutch',
+        vectorLabel: 'Z-AXIS ROLL TILT (18°)',
+        useCase: 'Tension, Cyberpunk & Psychological Drama',
+        description: 'Camera is tilted along its roll axis so the horizon sits diagonally, creating unease or stylized energy.',
+        prompt: 'Stylized Dutch angle shot with a 20-degree horizon tilt framing [SUBJECT], neon reflections, dramatic shadow contrast, 28mm wide cinema lens, neo-noir aesthetic'
+      },
+      {
+        id: 'crash-zoom',
+        title: 'Dramatic Crash Zoom',
+        category: 'Zoom & Lens',
+        animType: 'crash-zoom',
+        vectorLabel: 'OPTICAL FOCAL BURST (24→135mm)',
+        useCase: 'Sudden Impact, Comedy & Shock Focus',
+        description: 'Rapid optical focal length snap from wide-angle to tight telephoto without moving the camera body.',
+        prompt: 'Sudden high-speed optical crash zoom snapping from wide view tightly onto [SUBJECT], dramatic background compression, sharp focus lock, 70-200mm cinema zoom lens'
+      },
+      {
+        id: 'dolly-zoom-vertigo',
+        title: 'Dolly Zoom (Vertigo Effect)',
+        category: 'Zoom & Lens',
+        animType: 'vertigo',
+        vectorLabel: 'CONTRA-ZOOM PERSPECTIVE WARP',
+        useCase: 'Psychological Realization & Distortion',
+        description: 'Camera dollies backward while zooming in simultaneously, keeping subject size fixed as background warps.',
+        prompt: 'Cinematic Hitchcock dolly zoom vertigo effect on [SUBJECT], foreground remains constant size while background stretches and compresses dramatically, 35mm-85mm zoom'
+      },
+      {
+        id: 'rack-focus',
+        title: 'Shallow Rack Focus',
+        category: 'Zoom & Lens',
+        animType: 'rack-focus',
+        vectorLabel: 'APERTURE PLANE SHIFT (f/1.4)',
+        useCase: 'Directing Viewer Attention',
+        description: 'Focus plane shifts smoothly from a blurred foreground object to a razor-sharp midground subject.',
+        prompt: 'Cinematic rack focus shifting smoothly from soft out-of-focus foreground elements onto razor-sharp [SUBJECT], creamy f/1.4 bokeh, 85mm prime cinema lens'
+      },
+      {
+        id: 'macro-probe-push',
+        title: 'Macro Probe Lens Glide',
+        category: 'Zoom & Lens',
+        animType: 'macro-probe',
+        vectorLabel: 'EXTREME CLOSE-UP PENETRATION',
+        useCase: 'Beverages, Tech Hardware & Cosmetics',
+        description: 'Tubular 24mm macro lens glides millimeters away from textures or passes directly through narrow gaps.',
+        prompt: 'Laowa 24mm macro probe lens gliding inches away from intricate textures of [SUBJECT], glistening micro-details, high-speed commercial studio lighting, 4k'
+      },
+      {
+        id: 'fpv-drone-dive',
+        title: 'FPV Racing Drone Dive',
+        category: 'Drone & Aerial',
+        animType: 'drone-dive',
+        vectorLabel: 'HIGH-VELOCITY AERIAL DIVE',
+        useCase: 'Cliffs, Cars & Stadium Fly-Throughs',
+        description: 'Agile high-speed aerial dive banking steeply down a structure and pulling up inches above ground.',
+        prompt: 'High-speed FPV racing drone dive plunging steeply down toward [SUBJECT] and banking smoothly at low altitude, wide 14mm action lens, exhilarating motion'
+      },
+      {
+        id: 'top-down-gods-eye',
+        title: "90° Top-Down God's Eye",
+        category: 'Drone & Aerial',
+        animType: 'top-down',
+        vectorLabel: 'NADIR 90° VERTICAL ROTATION',
+        useCase: 'Geometric Patterns, Roads & Flatlays',
+        description: 'Camera points straight down at 90 degrees while slowly ascending and rotating for symmetrical geometry.',
+        prompt: "90-degree top-down bird's-eye drone shot looking straight down at [SUBJECT], slow symmetrical rotation while ascending, geometric patterns, crisp natural daylight"
+      },
+      {
+        id: 'crane-jib-boom',
+        title: 'Sweeping Crane / Jib Boom',
+        category: 'Drone & Aerial',
+        animType: 'crane',
+        vectorLabel: 'ARCING ELEVATION BOOM',
+        useCase: 'Grand Finale & Epic Crowd/Set Reveals',
+        description: 'Long mechanical arm sweeps upward and forward in a graceful vertical arc over obstacles.',
+        prompt: 'Grand sweeping cinema crane jib shot arcing upward and over foreground elements to reveal [SUBJECT], epic theatrical scale, 24mm anamorphic lens, golden rim light'
+      },
+      {
+        id: 'hyperlapse-forward',
+        title: 'Motion Hyperlapse',
+        category: 'Dynamic / Action',
+        animType: 'hyperlapse',
+        vectorLabel: 'TIME-COMPRESSED FORWARD TRACK',
+        useCase: 'Cityscapes, Traffic Trails & Time Passage',
+        description: 'Camera advances across long distances while time accelerates, turning lights and clouds into streaks.',
+        prompt: 'Dynamic forward-moving hyperlapse rushing toward [SUBJECT], fast-moving clouds and light trails streaking past, locked central subject alignment, 24mm lens, 8k'
+      }
+    ];
+
+    const CATEGORIES = [
+      'All',
+      'Dolly & Tracking',
+      'Pan & Tilt',
+      'Zoom & Lens',
+      'Drone & Aerial',
+      'Dynamic / Action'
+    ];
+
+    // =========================================================================
+    // 2. STATE & STORAGE MANAGEMENT
+    // =========================================================================
+    const STORAGE_KEY = 'ai_camera_studio_custom_movements_v1';
+
+    let customMovements = [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) customMovements = JSON.parse(saved);
+    } catch (e) {
+      console.warn('Could not load custom movements from localStorage', e);
+    }
+
+    let state = {
+      selectedCategory: 'All',
+      searchQuery: '',
+      activeMovement: null,
+      customSubject: '',
+      customLens: '35mm anamorphic lens',
+      customSpeed: 'Smooth, controlled',
+      customAspectRatio: '16:9'
+    };
+
+    function getAllMovements() {
+      return [...customMovements, ...DEFAULT_MOVEMENTS];
+    }
+
+    function saveCustomMovements() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(customMovements));
+      } catch (e) {
+        console.warn('Could not save to localStorage', e);
+      }
+    }
+
+    // =========================================================================
+    // 3. INTERACTIVE CANVAS ANIMATION ENGINE FOR CAMERA PREVIEWS
+    // =========================================================================
+    const activeCanvases = new Map();
+
+    function drawCameraSimulation(canvas, animType, timeSec, isHovered) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      if (canvas.width !== Math.floor(rect.width * dpr) || canvas.height !== Math.floor(rect.height * dpr)) {
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+      }
+
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      // Speed boost on hover
+      const speedMult = isHovered ? 1.45 : 0.85;
+      const t = (timeSec * speedMult) % 4; // 4-second seamless loop
+      const phase = t / 4; // 0 -> 1
+      const wave = Math.sin(phase * Math.PI * 2); // -1 -> 1 smooth oscillation
+      const easePingPong = 0.5 - 0.5 * Math.cos(phase * Math.PI * 2); // 0 -> 1 -> 0
+
+      // 1. Background Studio Grid & Horizon
+      ctx.fillStyle = '#090C12';
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle radial glow
+      const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, w * 0.65);
+      grad.addColorStop(0, 'rgba(99, 102, 241, 0.14)');
+      grad.addColorStop(1, 'rgba(9, 12, 18, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Calculate camera transform parameters based on animType
+      let camScale = 1;
+      let camOffsetX = 0;
+      let camOffsetY = 0;
+      let camRotation = 0;
+      let bgScale = 1;
+      let blurAlpha = 0;
+      let focusSubject = true;
+
+      switch (animType) {
+        case 'dolly-in':
+          camScale = 1 + easePingPong * 0.42;
+          bgScale = 1 + easePingPong * 0.22;
+          break;
+        case 'dolly-out':
+          camScale = 1.42 - easePingPong * 0.42;
+          bgScale = 1.22 - easePingPong * 0.22;
+          break;
+        case 'truck':
+          camOffsetX = wave * 34;
+          break;
+        case 'orbit':
+          camOffsetX = Math.cos(phase * Math.PI * 2) * 32;
+          camOffsetY = Math.sin(phase * Math.PI * 2) * 10;
+          break;
+        case 'steadicam':
+          camOffsetX = Math.sin(phase * Math.PI * 2) * 14;
+          camOffsetY = Math.cos(phase * Math.PI * 4) * 5;
+          camScale = 1.05 + easePingPong * 0.15;
+          break;
+        case 'pedestal':
+          camOffsetY = wave * 24;
+          break;
+        case 'pan':
+          camOffsetX = wave * 42;
+          break;
+        case 'tilt':
+          camOffsetY = wave * 28;
+          break;
+        case 'whip-pan': {
+          const whip = Math.pow(Math.sin(phase * Math.PI), 3);
+          camOffsetX = (phase < 0.5 ? -1 : 1) * whip * 65;
+          blurAlpha = whip * 0.55;
+          break;
+        }
+        case 'dutch':
+          camRotation = wave * 0.28; // ~16 deg
+          camScale = 1.12;
+          break;
+        case 'crash-zoom': {
+          const snap = phase < 0.5 ? Math.pow(phase * 2, 4) : 1 - Math.pow((phase - 0.5) * 2, 4);
+          camScale = 1 + snap * 0.75;
+          bgScale = 1 + snap * 0.75;
+          break;
+        }
+        case 'vertigo':
+          // Subject stays ~1.0 while background stretches dramatically
+          camScale = 1.0;
+          bgScale = 0.75 + easePingPong * 0.65;
+          break;
+        case 'rack-focus':
+          focusSubject = phase > 0.45;
+          break;
+        case 'macro-probe':
+          camScale = 1.15 + easePingPong * 0.6;
+          camOffsetY = Math.sin(phase * Math.PI * 2) * 6;
+          break;
+        case 'drone-dive':
+          camScale = 0.8 + easePingPong * 0.65;
+          camRotation = Math.sin(phase * Math.PI * 2) * 0.22;
+          camOffsetY = -18 + easePingPong * 32;
+          break;
+        case 'top-down':
+          camRotation = phase * Math.PI * 2;
+          camScale = 1.15 - easePingPong * 0.25;
+          break;
+        case 'crane':
+          camOffsetY = 20 - easePingPong * 40;
+          camScale = 1.2 - easePingPong * 0.25;
+          break;
+        case 'hyperlapse':
+          camScale = 1 + ((phase * 2) % 1) * 0.55;
+          blurAlpha = 0.25;
+          break;
+      }
+
+      // 2. Draw Perspective Grid (Background layer)
+      ctx.save();
+      ctx.translate(cx - camOffsetX * 0.55, cy - camOffsetY * 0.55);
+      ctx.rotate(camRotation);
+      ctx.scale(bgScale, bgScale);
+
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.14)';
+      ctx.lineWidth = 1;
+      const gridStep = 26;
+      for (let gx = -w; gx <= w; gx += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(gx, -h);
+        ctx.lineTo(gx, h);
+        ctx.stroke();
+      }
+      for (let gy = -h; gy <= h; gy += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(-w, gy);
+        ctx.lineTo(w, gy);
+        ctx.stroke();
+      }
+
+      // Background architectural pillars
+      ctx.fillStyle = 'rgba(30, 41, 59, 0.55)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
+      ctx.fillRect(-95, -42, 22, 84);
+      ctx.strokeRect(-95, -42, 22, 84);
+      ctx.fillRect(73, -42, 22, 84);
+      ctx.strokeRect(73, -42, 22, 84);
+      ctx.restore();
+
+      // 3. Draw Central Hero Subject (3D Isometric Cube / Studio Subject)
+      ctx.save();
+      const subjParallaxX = animType === 'orbit' ? -camOffsetX * 0.65 : -camOffsetX;
+      const subjParallaxY = animType === 'orbit' ? -camOffsetY * 0.4 : -camOffsetY;
+      ctx.translate(cx + subjParallaxX, cy + subjParallaxY);
+      ctx.rotate(camRotation);
+      ctx.scale(camScale, camScale);
+
+      // Subject opacity / blur simulation for Rack Focus
+      ctx.globalAlpha = focusSubject ? 1 : 0.35;
+
+      // Pedestal shadow
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(0, 24, 24, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Stylized 3D Prism / Subject Icon
+      const orbitShift = animType === 'orbit' ? Math.sin(phase * Math.PI * 2) * 8 : 0;
+      // Left face
+      ctx.fillStyle = '#312E81';
+      ctx.beginPath();
+      ctx.moveTo(orbitShift, -22);
+      ctx.lineTo(-22, -10);
+      ctx.lineTo(-22, 16);
+      ctx.lineTo(orbitShift, 26);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right face
+      ctx.fillStyle = '#4F46E5';
+      ctx.beginPath();
+      ctx.moveTo(orbitShift, -22);
+      ctx.lineTo(22, -10);
+      ctx.lineTo(22, 16);
+      ctx.lineTo(orbitShift, 26);
+      ctx.closePath();
+      ctx.fill();
+
+      // Top face
+      ctx.fillStyle = '#818CF8';
+      ctx.beginPath();
+      ctx.moveTo(0, -32);
+      ctx.lineTo(22, -10);
+      ctx.lineTo(orbitShift, -22);
+      ctx.lineTo(-22, -10);
+      ctx.closePath();
+      ctx.fill();
+
+      // Center target reticle on subject
+      ctx.strokeStyle = focusSubject ? '#34D399' : '#F59E0B';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(orbitShift * 0.5, 2, 6, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Foreground element for Rack Focus or Macro Probe
+      if (animType === 'rack-focus' || animType === 'truck') {
+        ctx.save();
+        ctx.translate(cx - 58 - camOffsetX * 1.4, cy + 16);
+        ctx.fillStyle = !focusSubject ? 'rgba(56, 189, 248, 0.85)' : 'rgba(56, 189, 248, 0.22)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Motion blur speed lines for Whip Pan / Hyperlapse
+      if (blurAlpha > 0.02) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(129, 140, 248, ${blurAlpha})`;
+        ctx.lineWidth = 1.5;
+        for (let i = -3; i <= 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(20, cy + i * 16);
+          ctx.lineTo(w - 20, cy + i * 16);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 4. Camera Viewfinder HUD Overlay (Safe Frame Brackets + Directional Vector Indicator)
+      const pad = 14;
+      const bracketLen = 12;
+      ctx.strokeStyle = isHovered ? 'rgba(129, 140, 248, 0.85)' : 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 1.5;
+
+      // Top-Left Bracket
+      ctx.beginPath();
+      ctx.moveTo(pad, pad + bracketLen);
+      ctx.lineTo(pad, pad);
+      ctx.lineTo(pad + bracketLen, pad);
+      ctx.stroke();
+
+      // Top-Right Bracket
+      ctx.beginPath();
+      ctx.moveTo(w - pad - bracketLen, pad);
+      ctx.lineTo(w - pad, pad);
+      ctx.lineTo(w - pad, pad + bracketLen);
+      ctx.stroke();
+
+      // Bottom-Left Bracket
+      ctx.beginPath();
+      ctx.moveTo(pad, h - pad - bracketLen);
+      ctx.lineTo(pad, h - pad);
+      ctx.lineTo(pad + bracketLen, h - pad);
+      ctx.stroke();
+
+      // Bottom-Right Bracket
+      ctx.beginPath();
+      ctx.moveTo(w - pad - bracketLen, h - pad);
+      ctx.lineTo(w - pad, h - pad);
+      ctx.lineTo(w - pad, h - pad - bracketLen);
+      ctx.stroke();
+
+      // Center Crosshair
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx - 6, cy);
+      ctx.lineTo(cx + 6, cy);
+      ctx.moveTo(cx, cy - 6);
+      ctx.lineTo(cx, cy + 6);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // Master Animation Loop
+    function animationLoop(timestamp) {
+      const timeSec = timestamp * 0.001;
+      activeCanvases.forEach((meta, canvas) => {
+        if (document.body.contains(canvas)) {
+          drawCameraSimulation(canvas, meta.animType, timeSec, meta.isHovered);
+        } else {
+          activeCanvases.delete(canvas);
+        }
+      });
+      requestAnimationFrame(animationLoop);
+    }
+    requestAnimationFrame(animationLoop);
+
+    // =========================================================================
+    // 4. UI RENDERING & FILTERING
+    // =========================================================================
+    function renderCategoryTabs() {
+      const container = document.getElementById('categoryTabs');
+      const allMovements = getAllMovements();
+
+      container.innerHTML = CATEGORIES.map(cat => {
+        const count = cat === 'All'
+          ? allMovements.length
+          : allMovements.filter(m => m.category === cat).length;
+
+        const isActive = state.selectedCategory === cat;
+        const activeClasses = isActive
+          ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/25'
+          : 'bg-[#141923] text-slate-400 border-white/10 hover:text-white hover:border-white/20';
+
+        return `
+          <button
+            type="button"
+            data-category="${cat}"
+            class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium border transition whitespace-nowrap flex items-center gap-1.5 ${activeClasses}"
+          >
+            <span>${cat}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-400'}">${count}</span>
+          </button>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selectedCategory = btn.dataset.category;
+          renderCategoryTabs();
+          renderGrid();
+        });
+      });
+    }
+
+    function getFilteredMovements() {
+      const query = state.searchQuery.trim().toLowerCase();
+      return getAllMovements().filter(item => {
+        const matchesCat = state.selectedCategory === 'All' || item.category === state.selectedCategory;
+        const matchesQuery = !query ||
+          item.title.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query) ||
+          item.prompt.toLowerCase().includes(query) ||
+          item.category.toLowerCase().includes(query) ||
+          (item.useCase && item.useCase.toLowerCase().includes(query));
+        return matchesCat && matchesQuery;
+      });
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('movementsGrid');
+      const emptyState = document.getElementById('emptyState');
+      const visibleCount = document.getElementById('visibleCount');
+      const activeFilterLabel = document.getElementById('activeFilterLabel');
+
+      const filtered = getFilteredMovements();
+      visibleCount.textContent = filtered.length;
+
+      if (state.selectedCategory !== 'All' || state.searchQuery.trim() !== '') {
+        activeFilterLabel.classList.remove('hidden');
+        activeFilterLabel.textContent = `Filter: ${state.selectedCategory}${state.searchQuery ? ` • "${state.searchQuery}"` : ''}`;
+      } else {
+        activeFilterLabel.classList.add('hidden');
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      emptyState.classList.remove('flex');
+
+      grid.innerHTML = filtered.map(item => {
+        const isCustom = item.id.startsWith('custom-');
+        return `
+          <article
+            data-id="${item.id}"
+            class="movement-card glass-card rounded-2xl overflow-hidden flex flex-col cursor-pointer group"
+          >
+            <!-- Interactive Motion Preview Header -->
+            <div class="relative h-44 w-full bg-[#090C12] border-b border-white/10 overflow-hidden">
+              <canvas data-anim="${item.animType}" class="card-canvas w-full h-full block"></canvas>
+
+              <!-- Top Badges -->
+              <div class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+                <span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#0B0D12]/80 backdrop-blur-md text-indigo-300 border border-indigo-500/30">
+                  ${item.category}
+                </span>
+                ${isCustom ? `
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    CUSTOM
+                  </span>
+                ` : `
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-mono bg-black/60 text-slate-400 border border-white/10 opacity-80 group-hover:opacity-100 transition">
+                    <i class="fa-solid fa-sliders mr-1 text-indigo-400"></i>Customize
+                  </span>
+                `}
+              </div>
+
+              <!-- Bottom Vector HUD Tag -->
+              <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pointer-events-none">
+                <span class="text-[10px] font-mono tracking-wider text-slate-400 bg-black/65 px-2 py-0.5 rounded border border-white/5">
+                  ${item.vectorLabel || 'CINEMA MOTION'}
+                </span>
+                <span class="text-[10px] font-medium text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-500/30">
+                  1.4x Preview
+                </span>
+              </div>
+            </div>
+
+            <!-- Card Content -->
+            <div class="p-5 flex-1 flex flex-col justify-between gap-4">
+              <div>
+                <div class="flex items-start justify-between gap-2 mb-1.5">
+                  <h3 class="text-base font-bold text-white group-hover:text-indigo-300 transition">
+                    ${item.title}
+                  </h3>
+                </div>
+                ${item.useCase ? `
+                  <p class="text-[11px] font-medium text-indigo-400/90 mb-2">
+                    <i class="fa-solid fa-bullseye mr-1 text-[10px]"></i>Best for: ${item.useCase}
+                  </p>
+                ` : ''}
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  ${item.description}
+                </p>
+              </div>
+
+              <!-- Prompt Snippet Box -->
+              <div class="space-y-2.5 pt-1">
+                <div class="p-3 rounded-xl bg-[#090B10] border border-white/10 group-hover:border-white/15 transition">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">AI Video Prompt</span>
+                    <button
+                      type="button"
+                      data-customize-id="${item.id}"
+                      class="customize-trigger text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition"
+                    >
+                      Edit Params &rarr;
+                    </button>
+                  </div>
+                  <p class="font-mono text-[11px] text-slate-300 line-clamp-2 leading-relaxed">
+                    ${item.prompt}
+                  </p>
+                </div>
+
+                <!-- Primary One-Click Copy Action -->
+                <button
+                  type="button"
+                  data-copy-id="${item.id}"
+                  class="copy-prompt-btn w-full py-2.5 px-4 rounded-xl bg-white/[0.06] hover:bg-indigo-600 text-slate-200 hover:text-white border border-white/10 hover:border-indigo-500 text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-[0.99]"
+                >
+                  <i class="fa-regular fa-copy"></i>
+                  <span>Copy Prompt</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      // Register canvases & hover listeners
+      grid.querySelectorAll('.movement-card').forEach(card => {
+        const canvas = card.querySelector('.card-canvas');
+        const animType = canvas.dataset.anim;
+        const meta = { animType, isHovered: false };
+        activeCanvases.set(canvas, meta);
+
+        card.addEventListener('mouseenter', () => { meta.isHovered = true; });
+        card.addEventListener('mouseleave', () => { meta.isHovered = false; });
+
+        // Open customizer modal on card click (except direct Copy button)
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.copy-prompt-btn')) return;
+          const movementId = card.dataset.id;
+          openCustomizerModal(movementId);
+        });
+      });
+
+      // Bind one-click copy buttons
+      grid.querySelectorAll('.copy-prompt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.copyId;
+          const movement = getAllMovements().find(m => m.id === id);
+          if (!movement) return;
+
+          const cleanPrompt = movement.prompt.replace('[SUBJECT]', 'a futuristic minimalist subject');
+          copyTextToClipboard(cleanPrompt);
+
+          // Visual feedback on button
+          const originalHTML = btn.innerHTML;
+          btn.classList.remove('bg-white/[0.06]', 'hover:bg-indigo-600', 'text-slate-200');
+          btn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-500');
+          btn.innerHTML = `<i class="fa-solid fa-check"></i><span>Copied!</span>`;
+
+          setTimeout(() => {
+            btn.classList.add('bg-white/[0.06]', 'hover:bg-indigo-600', 'text-slate-200');
+            btn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
+            btn.innerHTML = originalHTML;
+          }, 1600);
+        });
+      });
+    }
+
+    // =========================================================================
+    // 5. PROMPT CUSTOMIZER MODAL LOGIC
+    // =========================================================================
+    function openCustomizerModal(movementId) {
+      const movement = getAllMovements().find(m => m.id === movementId);
+      if (!movement) return;
+
+      state.activeMovement = movement;
+      state.customSubject = 'a sleek architectural glass pavilion at twilight';
+
+      document.getElementById('modalCategoryBadge').textContent = movement.category;
+      document.getElementById('modalMovementTitle').textContent = movement.title;
+      document.getElementById('modalMotionVectorLabel').textContent = `VECTOR: ${movement.vectorLabel || 'CINEMA MOTION'}`;
+      document.getElementById('customSubjectInput').value = state.customSubject;
+
+      // Show delete button only if it's a user-added custom movement
+      const deleteBtn = document.getElementById('deleteCustomMovementBtn');
+      if (movement.id.startsWith('custom-')) {
+        deleteBtn.classList.remove('hidden');
+      } else {
+        deleteBtn.classList.add('hidden');
+      }
+
+      updateCustomizedPrompt();
+
+      const modal = document.getElementById('customizerModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // Register modal preview canvas
+      const modalCanvas = document.getElementById('modalPreviewCanvas');
+      activeCanvases.set(modalCanvas, { animType: movement.animType, isHovered: true });
+    }
+
+    function closeCustomizerModal() {
+      const modal = document.getElementById('customizerModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      const modalCanvas = document.getElementById('modalPreviewCanvas');
+      activeCanvases.delete(modalCanvas);
+    }
+
+    function updateCustomizedPrompt() {
+      if (!state.activeMovement) return;
+      const subjectText = document.getElementById('customSubjectInput').value.trim() || 'a cinematic hero subject';
+      const lensText = document.getElementById('customLensSelect').value;
+
+      let base = state.activeMovement.prompt;
+      if (base.includes('[SUBJECT]')) {
+        base = base.replace('[SUBJECT]', subjectText);
+      } else {
+        base = `${base}, featuring ${subjectText}`;
+      }
+
+      const finalPrompt = `${state.customSpeed} camera movement — ${base}, shot on ${lensText}, photorealistic cinema lighting, ultra-detailed 4k --ar ${state.customAspectRatio}`;
+      document.getElementById('finalPromptOutput').textContent = finalPrompt;
+    }
+
+    // =========================================================================
+    // 6. CLIPBOARD & TOAST HELPERS
+    // =========================================================================
+    function copyTextToClipboard(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Prompt copied to clipboard!');
+      } catch (err) {
+        showToast('Unable to copy prompt');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-3');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2200);
+    }
+
+    // =========================================================================
+    // 7. EVENT LISTENERS INITIALIZATION
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCategoryTabs();
+      renderGrid();
+
+      // Search Input
+      const searchInput = document.getElementById('searchInput');
+      const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+      searchInput.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        clearSearchBtn.classList.toggle('hidden', state.searchQuery.length === 0);
+        renderGrid();
+      });
+
+      clearSearchBtn.addEventListener('click', () => {
+        state.searchQuery = '';
+        searchInput.value = '';
+        clearSearchBtn.classList.add('hidden');
+        renderGrid();
+      });
+
+      document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+        state.selectedCategory = 'All';
+        state.searchQuery = '';
+        searchInput.value = '';
+        clearSearchBtn.classList.add('hidden');
+        renderCategoryTabs();
+        renderGrid();
+      });
+
+      // Customizer Modal Controls
+      document.getElementById('closeCustomizerBtn').addEventListener('click', closeCustomizerModal);
+      document.getElementById('modalCancelBtn').addEventListener('click', closeCustomizerModal);
+      document.getElementById('customizerModal').addEventListener('click', (e) => {
+        if (e.target.id === 'customizerModal') closeCustomizerModal();
+      });
+
+      document.getElementById('customSubjectInput').addEventListener('input', updateCustomizedPrompt);
+      document.getElementById('customLensSelect').addEventListener('change', updateCustomizedPrompt);
+
+      // Speed selector buttons
+      document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.speed-btn').forEach(b => {
+            b.classList.remove('active', 'bg-indigo-600', 'text-white');
+            b.classList.add('text-slate-400');
+          });
+          btn.classList.add('active', 'bg-indigo-600', 'text-white');
+          btn.classList.remove('text-slate-400');
+          state.customSpeed = btn.dataset.speed;
+          updateCustomizedPrompt();
+        });
+      });
+
+      // Aspect ratio buttons
+      document.querySelectorAll('.ar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.ar-btn').forEach(b => {
+            b.classList.remove('active', 'bg-indigo-600', 'text-white');
+            b.classList.add('text-slate-400');
+          });
+          btn.classList.add('active', 'bg-indigo-600', 'text-white');
+          btn.classList.remove('text-slate-400');
+          state.customAspectRatio = btn.dataset.ar;
+          updateCustomizedPrompt();
+        });
+      });
+
+      // Modal Copy Button
+      document.getElementById('modalCopyBtn').addEventListener('click', () => {
+        const text = document.getElementById('finalPromptOutput').textContent;
+        copyTextToClipboard(text);
+      });
+
+      // Delete Custom Movement
+      document.getElementById('deleteCustomMovementBtn').addEventListener('click', () => {
+        if (!state.activeMovement) return;
+        customMovements = customMovements.filter(m => m.id !== state.activeMovement.id);
+        saveCustomMovements();
+        closeCustomizerModal();
+        renderCategoryTabs();
+        renderGrid();
+        showToast('Custom movement removed');
+      });
+
+      // Add New Movement Modal Controls
+      const addModal = document.getElementById('addMovementModal');
+      const openAdd = () => {
+        addModal.classList.remove('hidden');
+        addModal.classList.add('flex');
+      };
+      const closeAdd = () => {
+        addModal.classList.add('hidden');
+        addModal.classList.remove('flex');
+      };
+
+      document.getElementById('openAddModalBtn').addEventListener('click', openAdd);
+      document.getElementById('mobileAddBtn').addEventListener('click', openAdd);
+      document.getElementById('closeAddModalBtn').addEventListener('click', closeAdd);
+      document.getElementById('cancelAddModalBtn').addEventListener('click', closeAdd);
+      addModal.addEventListener('click', (e) => {
+        if (e.target.id === 'addMovementModal') closeAdd();
+      });
+
+      // Save New Custom Movement Form
+      document.getElementById('addMovementForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = document.getElementById('newTitle').value.trim();
+        const category = document.getElementById('newCategory').value;
+        const animType = document.getElementById('newAnimType').value;
+        const description = document.getElementById('newDescription').value.trim();
+        const prompt = document.getElementById('newPrompt').value.trim();
+
+        const newCard = {
+          id: 'custom-' + Date.now(),
+          title,
+          category,
+          animType,
+          vectorLabel: animType.toUpperCase() + ' CUSTOM',
+          useCase: 'Custom Studio Preset',
+          description,
+          prompt
+        };
+
+        customMovements.unshift(newCard);
+        saveCustomMovements();
+
+        e.target.reset();
+        closeAdd();
+        state.selectedCategory = 'All';
+        renderCategoryTabs();
+        renderGrid();
+        showToast(`Added "${title}" to Studio!`);
+      });
+
+      // Escape key closes modals
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeCustomizerModal();
+          closeAdd();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

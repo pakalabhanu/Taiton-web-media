@@ -110,12 +110,6 @@
       mask-image: radial-gradient(ellipse 84% 78% at 50% 49%, #000 62%, transparent 98%);
       pointer-events: none;
     }
-    #welcomeFallbackCanvas {
-      width: 100%;
-      height: 100%;
-      mix-blend-mode: screen;
-      pointer-events: none;
-    }
     @keyframes pulseFloat {
       0%, 100% { transform: translateY(0px); opacity: 0.85; }
       50% { transform: translateY(-3px); opacity: 1; }
@@ -137,19 +131,33 @@
     aria-label="Welcome to Taiton web@Media. Click anywhere to enter Studio."
     class="fixed inset-0 z-50 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden"
   >
-    <!-- Blended Video / Fallback Canvas Stage -->
+    <!-- Blended Video Stage (Supports Welcom-Note.mp4 & welcome.mp4) -->
     <div class="welcome-video-stage">
       <video
         id="welcomeVideo"
-        src="welcome.mp4"
         autoplay
         muted
         playsinline
         preload="auto"
-      ></video>
+      >
+        <source src="Welcom-Note.mp4" type="video/mp4" />
+        <source src="welcome.mp4" type="video/mp4" />
+        <source src="./Welcom-Note.mp4" type="video/mp4" />
+        <source src="./welcome.mp4" type="video/mp4" />
+      </video>
 
-      <!-- Graceful Interactive 3D Metallic TAITON Shatter Fallback (if welcome.mp4 is missing) -->
-      <canvas id="welcomeFallbackCanvas" class="hidden"></canvas>
+      <!-- Helpful Missing Video Notice (Shown only if video file is not yet uploaded) -->
+      <div id="videoMissingNotice" class="hidden flex-col items-center justify-center text-center px-6 py-5 rounded-2xl bg-[#11131c]/90 border border-indigo-400/30 backdrop-blur-xl shadow-2xl max-w-md mx-4">
+        <div class="w-11 h-11 rounded-xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-indigo-300 text-lg mb-3">
+          <i class="fa-solid fa-film"></i>
+        </div>
+        <p class="text-sm font-medium text-slate-200 mb-3">
+          Upload <code class="px-1.5 py-0.5 rounded bg-white/10 text-cyan-300 font-mono text-xs">Welcom-Note.mp4</code> or <code class="px-1.5 py-0.5 rounded bg-white/10 text-cyan-300 font-mono text-xs">welcome.mp4</code> to your GitHub repo root
+        </p>
+        <button type="button" id="missingVideoEnterBtn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition">
+          Enter Studio Now &rarr;
+        </button>
+      </div>
     </div>
 
     <!-- Subtle Bottom Click-to-Enter Pill -->
@@ -489,163 +497,22 @@
   <!-- Application Logic -->
   <script>
     // =========================================================================
-    // 0. BLENDED WELCOME VIDEO OVERLAY & 3D SHATTER FALLBACK ENGINE
+    // 0. BLENDED WELCOME VIDEO OVERLAY CONTROLLER (REAL VIDEO ONLY)
     // =========================================================================
     const welcomeController = (() => {
       const overlay = document.getElementById('welcomeOverlay');
       const video = document.getElementById('welcomeVideo');
-      const fallbackCanvas = document.getElementById('welcomeFallbackCanvas');
+      const missingNotice = document.getElementById('videoMissingNotice');
+      const missingEnterBtn = document.getElementById('missingVideoEnterBtn');
       let isDismissed = false;
-      let useFallback = false;
-      let fallbackStartTime = 0;
-      let fallbackAnimId = null;
-      let particles = [];
+      let failedSources = 0;
+      const totalSources = video.querySelectorAll('source').length;
 
-      function initParticles(w, h) {
-        particles = [];
-        const colors = ['#38bdf8', '#2563eb', '#93c5fd', '#ef4444', '#ffffff'];
-        for (let i = 0; i < 95; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 1.5 + Math.random() * 5.5;
-          particles.push({
-            x: w * 0.5 + (Math.random() - 0.5) * 260,
-            y: h * 0.5 + (Math.random() - 0.5) * 70,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 0.8,
-            size: 2 + Math.random() * 5,
-            rot: Math.random() * Math.PI * 2,
-            vRot: (Math.random() - 0.5) * 0.25,
-            color: colors[Math.floor(Math.random() * colors.length)]
-          });
-        }
-      }
-
-      function renderFallbackFrame(now) {
-        if (isDismissed || !useFallback) return;
-        const elapsed = (now - fallbackStartTime) * 0.001; // seconds (0 -> 3.9s)
-        const duration = 3.9;
-
-        if (elapsed >= duration) {
-          dismiss();
-          return;
-        }
-
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        if (fallbackCanvas.width !== Math.floor(w * dpr) || fallbackCanvas.height !== Math.floor(h * dpr)) {
-          fallbackCanvas.width = Math.floor(w * dpr);
-          fallbackCanvas.height = Math.floor(h * dpr);
-          if (particles.length === 0) initParticles(w, h);
-        }
-
-        const ctx = fallbackCanvas.getContext('2d');
-        ctx.save();
-        ctx.scale(dpr, dpr);
-
-        // Pure black canvas so mix-blend-mode: screen makes background 100% transparent
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, w, h);
-
-        const cx = w / 2;
-        const cy = h / 2;
-        const fontSize = Math.min(w * 0.13, 118);
-
-        // Phase 1 (0 -> 1.8s): 3D Metallic Zoom-in & Reveal
-        // Phase 2 (1.8s -> 3.9s): Shatter & Particle Disintegration
-        if (elapsed < 2.1) {
-          const zoomProgress = Math.min(elapsed / 0.85, 1);
-          const easeOut = 1 - Math.pow(1 - zoomProgress, 3);
-          const scale = 2.4 - easeOut * 1.4;
-          const alpha = elapsed > 1.75 ? Math.max(0, 1 - (elapsed - 1.75) / 0.35) : Math.min(elapsed * 2.5, 1);
-
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.scale(scale, scale);
-          ctx.globalAlpha = alpha;
-
-          // Metallic blue 3D extrusion shadow
-          ctx.font = `900 ${fontSize}px Inter, sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-
-          for (let depth = 6; depth >= 1; depth--) {
-            ctx.fillStyle = `rgba(15, 42, 110, ${0.45 / depth})`;
-            ctx.fillText('TAITON', depth * 1.4, depth * 1.4);
-          }
-
-          // Chrome-blue metallic gradient fill
-          const metalGrad = ctx.createLinearGradient(0, -fontSize * 0.5, 0, fontSize * 0.5);
-          metalGrad.addColorStop(0, '#93c5fd');
-          metalGrad.addColorStop(0.35, '#2563eb');
-          metalGrad.addColorStop(0.55, '#eff6ff');
-          metalGrad.addColorStop(0.8, '#1d4ed8');
-          metalGrad.addColorStop(1, '#60a5fa');
-
-          ctx.fillStyle = metalGrad;
-          ctx.shadowColor = 'rgba(59, 130, 246, 0.85)';
-          ctx.shadowBlur = 28;
-          ctx.fillText('TAITON', 0, 0);
-
-          // Metallic silver outline
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = 'rgba(219, 234, 254, 0.85)';
-          ctx.strokeText('TAITON', 0, 0);
-
-          // Signature Red Metallic Accent Underline
-          const barWidth = Math.min(w * 0.52, fontSize * 4.2) * easeOut;
-          const barGrad = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
-          barGrad.addColorStop(0, '#991b1b');
-          barGrad.addColorStop(0.5, '#ef4444');
-          barGrad.addColorStop(1, '#991b1b');
-          ctx.fillStyle = barGrad;
-          ctx.shadowColor = 'rgba(239, 68, 68, 0.9)';
-          ctx.shadowBlur = 18;
-          ctx.fillRect(-barWidth / 2, fontSize * 0.52, barWidth, 6);
-
-          ctx.restore();
-        }
-
-        // Shattering metallic shards & glowing dust particles (1.65s -> 3.9s)
-        if (elapsed >= 1.65) {
-          const shatterT = elapsed - 1.65;
-          const pAlpha = Math.max(0, 1 - shatterT / 2.1);
-
-          particles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.04;
-            p.rot += p.vRot;
-
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.rot);
-            ctx.globalAlpha = pAlpha;
-            ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 10;
-            ctx.beginPath();
-            ctx.moveTo(0, -p.size);
-            ctx.lineTo(p.size * 0.85, p.size * 0.6);
-            ctx.lineTo(-p.size * 0.75, p.size * 0.4);
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
-          });
-        }
-
-        ctx.restore();
-        fallbackAnimId = requestAnimationFrame(renderFallbackFrame);
-      }
-
-      function activateFallback() {
-        if (useFallback || isDismissed) return;
-        useFallback = true;
+      function showMissingNotice() {
+        if (isDismissed) return;
         video.classList.add('hidden');
-        fallbackCanvas.classList.remove('hidden');
-        initParticles(window.innerWidth, window.innerHeight);
-        fallbackStartTime = performance.now();
-        fallbackAnimId = requestAnimationFrame(renderFallbackFrame);
+        missingNotice.classList.remove('hidden');
+        missingNotice.classList.add('flex');
       }
 
       function dismiss() {
@@ -654,33 +521,37 @@
         try {
           video.pause();
         } catch (e) {}
-        if (fallbackAnimId) cancelAnimationFrame(fallbackAnimId);
         overlay.classList.add('overlay-hidden');
       }
 
       function replay() {
         isDismissed = false;
         overlay.classList.remove('overlay-hidden');
-        if (useFallback) {
-          initParticles(window.innerWidth, window.innerHeight);
-          fallbackStartTime = performance.now();
-          fallbackAnimId = requestAnimationFrame(renderFallbackFrame);
-        } else {
-          try {
-            video.currentTime = 0;
-            const playPromise = video.play();
-            if (playPromise && typeof playPromise.catch === 'function') {
-              playPromise.catch(() => activateFallback());
-            }
-          } catch (e) {
-            activateFallback();
+        video.classList.remove('hidden');
+        missingNotice.classList.add('hidden');
+        missingNotice.classList.remove('flex');
+        try {
+          video.currentTime = 0;
+          const playPromise = video.play();
+          if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(() => {
+              // If autoplay is blocked on replay, keep video visible and ready
+            });
           }
+        } catch (e) {
+          showMissingNotice();
         }
       }
 
       function init() {
         // Click or keyboard anywhere on overlay stops video and enters Home Page
         overlay.addEventListener('click', dismiss);
+        if (missingEnterBtn) {
+          missingEnterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dismiss();
+          });
+        }
         overlay.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
             e.preventDefault();
@@ -688,26 +559,38 @@
           }
         });
 
-        // Auto-enter when welcome.mp4 finishes playing
+        // Auto-enter when the video finishes playing
         video.addEventListener('ended', dismiss);
 
-        // Graceful fallback if welcome.mp4 is not yet uploaded or fails to load
-        video.addEventListener('error', activateFallback);
+        // Track source load errors across all <source> tags
+        video.querySelectorAll('source').forEach((srcEl) => {
+          srcEl.addEventListener('error', () => {
+            failedSources += 1;
+            if (failedSources >= totalSources) {
+              showMissingNotice();
+            }
+          });
+        });
 
-        // Attempt autoplay; if blocked or empty source, switch to smooth fallback
+        video.addEventListener('error', () => {
+          showMissingNotice();
+        });
+
+        // Attempt autoplay immediately
         const playPromise = video.play();
         if (playPromise && typeof playPromise.catch === 'function') {
           playPromise.catch(() => {
-            activateFallback();
+            // If browser blocks muted autoplay, wait for click or try load
+            video.load();
           });
         }
 
-        // Safety check: if video hasn't loaded metadata within 1.2s, activate fallback
+        // Verify if any video source loaded after 2.5 seconds
         setTimeout(() => {
-          if (!isDismissed && !useFallback && video.readyState === 0) {
-            activateFallback();
+          if (!isDismissed && video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+            showMissingNotice();
           }
-        }, 1200);
+        }, 2500);
       }
 
       return { init, dismiss, replay };
